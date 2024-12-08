@@ -7,64 +7,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model categories {
-  category_id Int        @id @default(autoincrement())
-  name        String     @unique(map: "name") @db.VarChar(100)
-  description String?    @db.Text
-  created_at  DateTime   @default(now()) @db.Timestamp(0)
-  products    products[]
+model Inventory_Transactions {
+  TransactionID   Int                                    @id @default(autoincrement())
+  ProductID       Int
+  SupplierID      Int?
+  TransactionType Inventory_Transactions_TransactionType
+  Quantity        Int
+  TransactionDate DateTime?                              @default(now()) @db.DateTime(0)
+  Products        Products                               @relation(fields: [ProductID], references: [ProductID], onUpdate: Restrict, map: "Inventory_Transactions_ibfk_1")
+  Suppliers       Suppliers?                             @relation(fields: [SupplierID], references: [SupplierID], onDelete: Restrict, onUpdate: Restrict, map: "Inventory_Transactions_ibfk_2")
+
+  @@index([ProductID], map: "ProductID")
+  @@index([SupplierID], map: "SupplierID")
 }
 
-model products {
-  product_id      Int               @id @default(autoincrement())
-  name            String            @db.VarChar(100)
-  category_id     Int
-  price           Decimal           @db.Decimal(10, 2)
-  stock_quantity  Int?              @default(0)
-  reorder_level   Int?              @default(5)
-  created_at      DateTime          @default(now()) @db.Timestamp(0)
-  updated_at      DateTime          @default(now()) @db.Timestamp(0)
-  categories      categories        @relation(fields: [category_id], references: [category_id], onUpdate: Restrict, map: "products_ibfk_1")
-  sale_items      sale_items[]
-  stock_movements stock_movements[]
-
-  @@index([category_id], map: "category_id")
+model Products {
+  ProductID              Int                      @id @default(autoincrement())
+  ProductName            String                   @db.VarChar(100)
+  Category               String?                  @db.VarChar(50)
+  QuantityInStock        Int?                     @default(0)
+  Price                  Decimal                  @db.Decimal(10, 2)
+  Inventory_Transactions Inventory_Transactions[]
 }
 
-model sale_items {
-  sale_item_id Int      @id @default(autoincrement())
-  sale_id      Int
-  product_id   Int
-  quantity     Int
-  price        Decimal  @db.Decimal(10, 2)
-  total        Decimal  @db.Decimal(10, 2)
-  sales        sales    @relation(fields: [sale_id], references: [sale_id], onUpdate: Restrict, map: "sale_items_ibfk_1")
-  products     products @relation(fields: [product_id], references: [product_id], onUpdate: Restrict, map: "sale_items_ibfk_2")
-
-  @@index([product_id], map: "product_id")
-  @@index([sale_id], map: "sale_id")
+model Suppliers {
+  SupplierID             Int                      @id @default(autoincrement())
+  SupplierName           String                   @db.VarChar(100)
+  ContactEmail           String?                  @db.VarChar(100)
+  ContactPhone           String?                  @db.VarChar(15)
+  Inventory_Transactions Inventory_Transactions[]
 }
 
-model sales {
-  sale_id      Int          @id @default(autoincrement())
-  total_amount Decimal      @db.Decimal(10, 2)
-  sale_date    DateTime     @default(now()) @db.Timestamp(0)
-  sale_items   sale_items[]
-}
-
-model stock_movements {
-  movement_id Int                  @id @default(autoincrement())
-  product_id  Int
-  quantity    Int
-  type        stock_movements_type
-  reason      String?              @db.Text
-  created_at  DateTime             @default(now()) @db.Timestamp(0)
-  products    products             @relation(fields: [product_id], references: [product_id], onUpdate: Restrict, map: "stock_movements_ibfk_1")
-
-  @@index([product_id], map: "product_id")
-}
-
-enum stock_movements_type {
-  addition
-  subtraction
+enum Inventory_Transactions_TransactionType {
+  IN
+  OUT
 }
